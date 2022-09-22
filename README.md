@@ -1,7 +1,9 @@
 # bank-backend-system
 This is my first solo project. This project is about backend and resumes all my current knowledge as a trainee developer.
 
-I'm going to make a digital bank. The app will going to be used for loans, check movements, see your cards, the bank will have several branchs, employee and customers.
+I'm going to make a digital bank. The app will going to be used for loans, check movements, see your bank cards, the bank will have several branchs, employee and customers.
+
+Also the app is going to have an API with several endpoints to interact with.
 
 ## Database
 
