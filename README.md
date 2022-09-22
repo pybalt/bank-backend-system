@@ -1,5 +1,5 @@
 # bank-backend-system
-This is my first solo project. This project is about backend and resumes all my knowledge about backend.
+This is my first solo project. This project is about backend and resumes all my current knowledge.
 
 I'm going to make a digital bank. The app will going to be used for loans, check movements, see your cards, the bank will have several branchs, employee and customers.
 
