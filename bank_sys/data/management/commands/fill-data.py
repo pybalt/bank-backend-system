@@ -1,11 +1,13 @@
 # This is a custom command. You use it through manage.py this way:
 "py manage.py fill-data"
+from re import I
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from faker import Faker
 import pycountry
 import geonamescache
 from address.models import (Country, State, City, Address)
+from branch.models import Branch
 import random
 from django.db.utils import IntegrityError
 gc = geonamescache.GeonamesCache()
@@ -95,7 +97,11 @@ class ModelDB:
     def user() -> object:
         return User(username = f"{fake.simple_profile()['username']}", 
                     password = f"{fake.password(length = 50, special_chars = True, digits = True)}")
-
+    @staticmethod
+    def branch(i) -> object:
+        return Branch(branch_number = random.randint(1, 9999), 
+                        branch_name = fake.color_name(),
+                        branch_address = i)
 
 class Command(BaseCommand):
     
@@ -116,11 +122,34 @@ class Command(BaseCommand):
                 break
             try:
                 ModelDB.address().save()
+            except IntegrityError:
+                _integrity_errors += 1
+                continue
             except IndexError:
                 "Just a Country with no subdivissions."
+                continue
+            except TypeError:
+                "A Country with no subdivissions can also throw an TypeError: NoneType."
                 continue
             try:
                 ModelDB.user().save()
             except IntegrityError:
                 "It seems this user already exists."
+                
+            "Branchs"
+            desired_proportion = 8 # 1 of 8 instances must be a branch 
+            number_of_addresses = Address.objects.count()
+            number_of_branchs = int("%.0f" % (number_of_addresses/desired_proportion))
+            
+            if number_of_branchs > 0:
+                for _ in range(number_of_branchs):
+                    pk_addresses : list = Address.objects.all().values_list('id')
+                    pk = random.choice(pk_addresses)
+                    try:
+                        ModelDB.branch(Address.objects.filter(pk = pk[0]).first()).save()
+                    except IntegrityError:
+                        "It seems this address has already been asigned."
+                        continue
             new_fields += 1
+            
+            
