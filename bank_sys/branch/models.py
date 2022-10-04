@@ -21,7 +21,7 @@ class Branch(models.Model):
     id = models.AutoField(primary_key= True, unique=True, verbose_name = 'ID')
     branch_number = models.IntegerField(verbose_name = 'Branch number', unique=True)
     branch_name = models.CharField(max_length = 50, verbose_name = 'Branch name', unique=True)
-    branch_address = models.OneToOneField(Address, on_delete= models.CASCADE, to_field="id", unique=True,verbose_name = 'Address')
+    branch_address = models.OneToOneField(Address, on_delete= models.CASCADE, to_field="id", unique=True, verbose_name = 'Address')
     
     class Meta:
         managed = True
