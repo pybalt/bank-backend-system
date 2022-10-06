@@ -47,7 +47,6 @@ class State(models.Model):
                           unique=True,
                           verbose_name="ID")
     state_name = models.CharField(max_length=50,
-                                  unique=True,
                                   verbose_name="State name")
     code = models.CharField(max_length=20,
                             unique=True,
