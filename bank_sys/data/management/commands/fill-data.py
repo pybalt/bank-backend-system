@@ -1,6 +1,6 @@
 # This is a custom command. You use it through manage.py this way:
 "py manage.py fill-data"
-from types import NoneType
+from typing import Any
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from faker import Faker
@@ -8,6 +8,7 @@ import pycountry
 import geonamescache
 from address.models import (Country, State, City, Address)
 from branch.models import Branch
+from employee.models import Employee
 import random
 from django.db.utils import IntegrityError
 gc = geonamescache.GeonamesCache()
@@ -15,10 +16,7 @@ countries = gc.get_countries()
 cities = gc.get_cities()
 fake = Faker()
 
-
 class IGenerated():
-    def choose_random(self) -> dict:
-        raise NotImplementedError #  I must refactor. Users doesn't get choosed.
 
     def does_exists(self) -> bool:
         raise NotImplementedError
@@ -30,14 +28,19 @@ class IGenerated():
 
     def model_object(self) -> object:
         raise NotImplementedError
+    
+class IGeneratedFromList(IGenerated):
+
+    def choose_random(self) -> Any:
+        raise NotImplementedError
 
 
-class ISubdivissions(IGenerated):
+class ISubdivissions():
     def has_subdivissions() -> bool:
         raise NotImplementedError
 
 
-class GeneratedCountry(ISubdivissions):
+class GeneratedCountry(ISubdivissions, IGeneratedFromList):
 
     def choose_random(self) -> str:
         print(self.choose_random)
@@ -64,21 +67,22 @@ class GeneratedCountry(ISubdivissions):
                                         country_name=self.country_name)
 
 
-class GeneratedState(ISubdivissions):
+class GeneratedState(IGeneratedFromList, ISubdivissions):
 
+
+    def has_subdivissions(self, country_code) -> bool:
+        print(self.has_subdivissions)
+        return bool(pycountry.subdivisions.get(country_code=country_code))
+    
     def choose_random(self, country_code: str) -> str:
         print(self.choose_random)
-        subdivissions = pycountry.subdivisions.get(country_code=country_code)
-        return random.choice(list(subdivissions))
+        if self.has_subdivissions(country_code):
+            subdivissions = pycountry.subdivisions.get(country_code=country_code)
+            return random.choice(list(subdivissions))
 
     def does_exists(self) -> bool:
         print(self.does_exists)
         return State.objects.filter(code=self.state_code).exists()
-
-    def has_subdivissions(self) -> bool:
-        print(self.has_subdivissions)
-        # This is completely random. I must refactor.
-        return NotImplementedError
 
     @staticmethod
     def model_object(state_code) -> object:
@@ -94,9 +98,9 @@ class GeneratedState(ISubdivissions):
                                   country_code
                                   )
                               )
+        #TODO This may been prone to fail. Check it.
 
-
-class GeneratedCity(IGenerated):
+class GeneratedCity(IGeneratedFromList):
 
     def choose_random(self, countrycode: str) -> str(int):
         print(self.choose_random)
@@ -147,21 +151,11 @@ class RandomStreet:
 
 class GeneratedAddress(IGenerated):
 
-    def choose_random(self, country_code: str) -> str:
-        print(self.choose_random)
-        subdivissions = pycountry.subdivisions.get(country_code=country_code)
-        return random.choice(list(subdivissions))
-
     def does_exists(self) -> bool:
         print(self.does_exists)
         return Address.objects.filter(address_name=self.address_name,
                                       address_number=self.address_number,
                                       address_city=self.address_city).exists()
-
-    def has_subdivissions(self) -> bool:
-        print(self.has_subdivissions)
-        # This is completely random. I must refactor.
-        return NotImplementedError
 
     @staticmethod
     def model_object(name, number, city) -> object:
@@ -181,6 +175,110 @@ class GeneratedAddress(IGenerated):
                                 address_city=self.address_city)
 
 
+class GeneratedBranch(IGenerated):
+    
+    def does_exists(self) -> bool:
+        print(self.does_exists)
+        return Branch.objects.filter(branch_number=self.branch_number,
+                                   branch_name=self.branch_name,
+                                   branch_address=self.address).exists()
+    
+    @staticmethod
+    def model_object(number, name, address) -> object:
+        print(GeneratedBranch.model_object)
+        return Branch.objects.get(branch_number=number,
+                                  branch_name=name,
+                                  branch_address=address)
+    
+    def check_integrity(self) -> bool:
+        print(self.model_object)
+        number = Branch.objects.filter(branch_number = self.branch_number).exists()
+        name = Branch.objects.filter(branch_name = self.branch_name).exists()
+        if not (number or name):
+            return True
+        
+        return False
+
+    def __init__(self, address) -> None:
+        print(self.__init__)
+        self.branch_number = random.randint(1, 9999)
+        self.branch_name = fake.color_name()
+        self.address = GeneratedAddress.model_object(address.address_name,
+                                         address.address_number,
+                                         address.address_city)
+        if not self.check_integrity():
+            self.branch_number = random.randint(1, 20000)
+            self.branch_name = fake.street_name()
+        self.instance = Branch(branch_number=self.branch_number,
+                               branch_name=self.branch_name,
+                               branch_address=self.address)
+
+class GeneratedUser(IGenerated):
+    def does_exists(self) -> bool:
+        print(self.does_exists)
+        return User.objects.filter(username=self.username).exists()
+    
+    @staticmethod
+    def model_object(username) -> object:
+        print(GeneratedUser.model_object)
+        return User.objects.get(username=username)
+
+    def __init__(self) -> None:
+        self.username = fake.simple_profile()['username']
+        self.password = fake.password(length = 50, special_chars = True, digits = True)
+        self.instance = User(username=self.username, password=self.password)
+
+class GeneratedEmployee(IGenerated):
+    def does_exists(self) -> bool:
+        print(self.does_exists)
+        return Employee.objects.filter(employee_dni=self.dni).exists()
+    
+    @staticmethod
+    def model_object(user) -> object:
+        print(GeneratedEmployee.model_object)
+        return Employee.objects.get(user = user)
+
+    def __init__(self, branch, address) -> None:
+        print(GeneratedEmployee.__init__)
+        self.user = give_me_an_user()
+        self.name = fake.first_name()
+        self.surname = fake.last_name()
+        self.hire_date= fake.date()
+        self.dni = random.random() * 1000000
+        if self.does_exists():
+            self.__init__(branch, address)
+        self.branch = branch
+        self.address = GeneratedAddress.model_object(address.address_name,
+                                                     address.address_number,
+                                                     address.address_city)
+        self.instance = Employee(user=self.user,
+                                 employee_name=self.name,
+                                 employee_surname=self.surname,
+                                 employee_hire_date=self.hire_date,
+                                 employee_dni=self.dni,
+                                 branch=self.branch,
+                                 address=self.address)
+
+
+def give_me_an_address() -> object:
+    print(give_me_an_address)
+    country = GeneratedCountry()
+    country.insert()
+    state = GeneratedState(country.country_code)
+    state.insert()
+    city = GeneratedCity(country.country_code,
+                                 state.state_code)
+    city.insert()
+    address = GeneratedAddress(city.name, state.state_code)
+    address.insert()
+    return address
+
+def give_me_an_user() -> object:
+    user = GeneratedUser()
+    user.insert()
+    user = GeneratedUser.model_object(user.username)
+    return user
+
 class Command(BaseCommand):
 
     help = "This command is to fill the database with dummy data. Just for testing purposes."
@@ -190,14 +288,12 @@ class Command(BaseCommand):
         number_of_fields = int(
             input("How many fields do you want to generate?  \n  --> "))
         for _ in range(number_of_fields):
-            country = GeneratedCountry()
-            print(country.country_name, country.country_code)
-            country.insert()
-            state = GeneratedState(country.country_code)
-            print(state.state_code, state.state_name, state.instance)
-            state.insert()
-            city = GeneratedCity(country.country_code,
-                                 state.state_code)
-            city.insert()
-            address = GeneratedAddress(city.name, state.state_code)
-            address.insert()
+            "Branch"
+            branch = GeneratedBranch(give_me_an_address())
+            branch.insert()
+            "employees"
+            branch = GeneratedBranch.model_object(branch.branch_number,
+                                                  branch.branch_name,
+                                                  branch.address)
+            employee = GeneratedEmployee(branch, give_me_an_address())
+            employee.insert()
