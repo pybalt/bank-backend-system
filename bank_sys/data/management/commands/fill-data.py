@@ -340,10 +340,10 @@ class Command(BaseCommand):
             "Branch"
             branch = GeneratedBranch(give_me_an_address())
             branch.insert()
-            "employees"
             branch = GeneratedBranch.model_object(branch.branch_number,
                                                   branch.branch_name,
                                                   branch.address)
+            "employees"
             for _ in range(2):
                 employee = GeneratedEmployee(branch, give_me_an_address())
                 employee.insert()
@@ -352,4 +352,7 @@ class Command(BaseCommand):
                     customer = GeneratedCustomer(branch,
                                                 give_me_an_address())
                     customer.insert()
-            
+                    "Customer accounts"
+                    "Customer cards"
+                    "Customer movements"
+                    "Loans"
