@@ -34,7 +34,7 @@ class Employee(models.Model):
     employee_name = models.CharField(max_length= 50, verbose_name = 'Name')
     employee_surname = models.CharField(max_length= 50, verbose_name = 'Surname')
     employee_hire_date = models.DateField(verbose_name = 'Hire date')
-    employee_dni = models.IntegerField(verbose_name = 'DNI')
+    employee_dni = models.IntegerField(verbose_name = 'DNI', unique=True)
     branch = models.ForeignKey(Branch, on_delete= models.CASCADE, verbose_name = 'Branch')
     address = models.OneToOneField(Address, on_delete= models.CASCADE, unique=True, to_field="id", verbose_name = 'Address')
 
