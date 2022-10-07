@@ -8,6 +8,7 @@ import pycountry
 import geonamescache
 from address.models import (Country, State, City, Address)
 from branch.models import Branch
+from customer.models import Customer, CustomerType
 from employee.models import Employee
 import random
 from django.db.utils import IntegrityError
@@ -228,6 +229,54 @@ class GeneratedUser(IGenerated):
         self.password = fake.password(length = 50, special_chars = True, digits = True)
         self.instance = User(username=self.username, password=self.password)
 
+class GeneratedCustomer(IGenerated):
+    class GeneratedType(IGeneratedFromList):
+        def does_exists(self) -> bool:
+            return CustomerType.objects.filter(customer_type=self.customer_type).exists()
+
+        @staticmethod
+        def model_object(customer_type) -> object:
+            return CustomerType.objects.get(customer_type=customer_type)
+        
+        def choose_random(self) -> Any:
+            __types = ['BLACK', 'GOLD', 'CLASSIC']
+            return random.choice(__types)
+        
+        def __init__(self) -> None:
+            self.customer_type = self.choose_random()
+            self.instance = CustomerType(customer_type=self.customer_type)
+            self.instance = self.insert()
+            self.instance = GeneratedCustomer.GeneratedType.model_object(self.customer_type)
+    
+    def does_exists(self) -> bool:
+        return Customer.objects.filter(user = self.user)
+
+    @staticmethod
+    def model_object(self, user) -> object:
+        return Customer.objects.get(user=user)
+
+    def __init__(self, branch, address) -> None:
+        self.user = give_me_an_user()
+        self.name = fake.first_name()
+        self.surname = fake.last_name()
+        self.dni = random.random() * 10000000
+        self.type = GeneratedCustomer.GeneratedType().instance
+        self.dob = fake.date()
+        self.branch = branch
+        self.address = GeneratedAddress.model_object(address.address_name,
+                                                     address.address_number,
+                                                     address.address_city)
+        self.instance = Customer(
+            user=self.user,
+            customer_name=self.name,
+            customer_surname=self.surname,
+            customer_dni=self.dni,
+            customer_type=self.type,
+            customer_dob=self.dob,
+            branch=self.branch,
+            address=self.address
+        )
+        
 class GeneratedEmployee(IGenerated):
     def does_exists(self) -> bool:
         print(self.does_exists)
@@ -244,7 +293,7 @@ class GeneratedEmployee(IGenerated):
         self.name = fake.first_name()
         self.surname = fake.last_name()
         self.hire_date= fake.date()
-        self.dni = random.random() * 1000000
+        self.dni = random.random() * 10000000
         if self.does_exists():
             self.__init__(branch, address)
         self.branch = branch
@@ -295,5 +344,12 @@ class Command(BaseCommand):
             branch = GeneratedBranch.model_object(branch.branch_number,
                                                   branch.branch_name,
                                                   branch.address)
-            employee = GeneratedEmployee(branch, give_me_an_address())
-            employee.insert()
+            for _ in range(2):
+                employee = GeneratedEmployee(branch, give_me_an_address())
+                employee.insert()
+
+                for _ in range(2):
+                    customer = GeneratedCustomer(branch,
+                                                give_me_an_address())
+                    customer.insert()
+            

@@ -1,3 +1,4 @@
+from enum import unique
 from django.db import models
 from django.contrib.auth.models import User
 from branch.models import Branch
@@ -14,7 +15,7 @@ class CustomerType(models.Model):
         customer_type ]
     """
     id = models.AutoField(primary_key=True, unique=True, verbose_name = 'ID')
-    customer_type = models.CharField(max_length= 15, verbose_name = 'Type')
+    customer_type = models.CharField(max_length= 15, verbose_name = 'Type', unique=True)
 
 
 class Customer(models.Model):
