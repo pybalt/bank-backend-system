@@ -19,6 +19,7 @@ countries = gc.get_countries()
 cities = gc.get_cities()
 fake = Faker()
 
+
 class IGenerated():
 
     def does_exists(self) -> bool:
@@ -31,6 +32,7 @@ class IGenerated():
 
     def model_object(self) -> object:
         raise NotImplementedError
+
 
 class IGeneratedFromList(IGenerated):
 
@@ -72,15 +74,16 @@ class GeneratedCountry(ISubdivissions, IGeneratedFromList):
 
 class GeneratedState(IGeneratedFromList, ISubdivissions):
 
-
     def has_subdivissions(self, country_code) -> bool:
         print(self.has_subdivissions)
         return bool(pycountry.subdivisions.get(country_code=country_code))
-    
+
     def choose_random(self, country_code: str) -> str:
         print(self.choose_random)
         if self.has_subdivissions(country_code):
-            subdivissions = pycountry.subdivisions.get(country_code=country_code)
+            subdivissions = pycountry.subdivisions.get(
+                country_code=country_code
+                )
             return random.choice(list(subdivissions))
 
     def does_exists(self) -> bool:
@@ -101,7 +104,8 @@ class GeneratedState(IGeneratedFromList, ISubdivissions):
                                   country_code
                                   )
                               )
-        #TODO This may been prone to fail. Check it.
+        # TODO This may been prone to fail. Check it.
+
 
 class GeneratedCity(IGeneratedFromList):
 
@@ -183,8 +187,8 @@ class GeneratedBranch(IGenerated):
     def does_exists(self) -> bool:
         print(self.does_exists)
         return Branch.objects.filter(branch_number=self.branch_number,
-                                   branch_name=self.branch_name,
-                                   branch_address=self.address).exists()
+                                     branch_name=self.branch_name,
+                                     branch_address=self.address).exists()
 
     @staticmethod
     def model_object(number, name, address) -> object:
@@ -195,8 +199,10 @@ class GeneratedBranch(IGenerated):
 
     def check_integrity(self) -> bool:
         print(self.model_object)
-        number = Branch.objects.filter(branch_number = self.branch_number).exists()
-        name = Branch.objects.filter(branch_name = self.branch_name).exists()
+        number = Branch.objects.filter(
+            branch_number=self.branch_number
+            ).exists()
+        name = Branch.objects.filter(branch_name=self.branch_name).exists()
         if not (number or name):
             return True
 
@@ -385,6 +391,7 @@ class GeneratedAccount(IGenerated):
             type=self.type,
             iban=self.iban
         )
+
 
 def give_me_an_address() -> object:
     print(give_me_an_address)
