@@ -83,7 +83,7 @@ class City(models.Model):
     city_name = models.CharField(max_length=50,
                                  verbose_name="City name")
     state = models.ForeignKey(State, on_delete=models.CASCADE,
-                              to_field='code',
+                              to_field='id',
                               verbose_name='State code')
 
     class Meta:
