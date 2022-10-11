@@ -1,12 +1,14 @@
 # This is a custom command. You use it through manage.py this way:
 "py manage.py fill-data"
 from typing import Any
+from uuid import uuid4
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from faker import Faker
 import pycountry
 import geonamescache
 from address.models import (Country, State, City, Address)
+from account.models import Account, TypeAccount
 from branch.models import Branch
 from customer.models import Customer, CustomerType
 from employee.models import Employee
@@ -29,7 +31,7 @@ class IGenerated():
 
     def model_object(self) -> object:
         raise NotImplementedError
-    
+
 class IGeneratedFromList(IGenerated):
 
     def choose_random(self) -> Any:
@@ -177,27 +179,27 @@ class GeneratedAddress(IGenerated):
 
 
 class GeneratedBranch(IGenerated):
-    
+
     def does_exists(self) -> bool:
         print(self.does_exists)
         return Branch.objects.filter(branch_number=self.branch_number,
                                    branch_name=self.branch_name,
                                    branch_address=self.address).exists()
-    
+
     @staticmethod
     def model_object(number, name, address) -> object:
         print(GeneratedBranch.model_object)
         return Branch.objects.get(branch_number=number,
                                   branch_name=name,
                                   branch_address=address)
-    
+
     def check_integrity(self) -> bool:
         print(self.model_object)
         number = Branch.objects.filter(branch_number = self.branch_number).exists()
         name = Branch.objects.filter(branch_name = self.branch_name).exists()
         if not (number or name):
             return True
-        
+
         return False
 
     def __init__(self, address) -> None:
@@ -205,8 +207,8 @@ class GeneratedBranch(IGenerated):
         self.branch_number = random.randint(1, 9999)
         self.branch_name = fake.color_name()
         self.address = GeneratedAddress.model_object(address.address_name,
-                                         address.address_number,
-                                         address.address_city)
+                                                     address.address_number,
+                                                     address.address_city)
         if not self.check_integrity():
             self.branch_number = random.randint(1, 20000)
             self.branch_name = fake.street_name()
@@ -214,11 +216,12 @@ class GeneratedBranch(IGenerated):
                                branch_name=self.branch_name,
                                branch_address=self.address)
 
+
 class GeneratedUser(IGenerated):
     def does_exists(self) -> bool:
         print(self.does_exists)
         return User.objects.filter(username=self.username).exists()
-    
+
     @staticmethod
     def model_object(username) -> object:
         print(GeneratedUser.model_object)
@@ -226,33 +229,40 @@ class GeneratedUser(IGenerated):
 
     def __init__(self) -> None:
         self.username = fake.simple_profile()['username']
-        self.password = fake.password(length = 50, special_chars = True, digits = True)
+        self.password = fake.password(length=50,
+                                      special_chars=True,
+                                      digits=True)
         self.instance = User(username=self.username, password=self.password)
+
 
 class GeneratedCustomer(IGenerated):
     class GeneratedType(IGeneratedFromList):
         def does_exists(self) -> bool:
-            return CustomerType.objects.filter(customer_type=self.customer_type).exists()
+            return CustomerType.objects.filter(
+                customer_type=self.customer_type
+                ).exists()
 
         @staticmethod
         def model_object(customer_type) -> object:
             return CustomerType.objects.get(customer_type=customer_type)
-        
+
         def choose_random(self) -> Any:
             __types = ['BLACK', 'GOLD', 'CLASSIC']
             return random.choice(__types)
-        
+
         def __init__(self) -> None:
             self.customer_type = self.choose_random()
             self.instance = CustomerType(customer_type=self.customer_type)
             self.instance = self.insert()
-            self.instance = GeneratedCustomer.GeneratedType.model_object(self.customer_type)
-    
+            self.instance = GeneratedCustomer.GeneratedType.model_object(
+                self.customer_type
+                )
+
     def does_exists(self) -> bool:
-        return Customer.objects.filter(user = self.user)
+        return Customer.objects.filter(user=self.user)
 
     @staticmethod
-    def model_object(self, user) -> object:
+    def model_object(user) -> object:
         return Customer.objects.get(user=user)
 
     def __init__(self, branch, address) -> None:
@@ -276,23 +286,24 @@ class GeneratedCustomer(IGenerated):
             branch=self.branch,
             address=self.address
         )
-        
+
+
 class GeneratedEmployee(IGenerated):
     def does_exists(self) -> bool:
         print(self.does_exists)
         return Employee.objects.filter(employee_dni=self.dni).exists()
-    
+
     @staticmethod
     def model_object(user) -> object:
         print(GeneratedEmployee.model_object)
-        return Employee.objects.get(user = user)
+        return Employee.objects.get(user=user)
 
     def __init__(self, branch, address) -> None:
         print(GeneratedEmployee.__init__)
         self.user = give_me_an_user()
         self.name = fake.first_name()
         self.surname = fake.last_name()
-        self.hire_date= fake.date()
+        self.hire_date = fake.date()
         self.dni = random.random() * 10000000
         if self.does_exists():
             self.__init__(branch, address)
@@ -309,6 +320,72 @@ class GeneratedEmployee(IGenerated):
                                  address=self.address)
 
 
+class GeneratedAccount(IGenerated):
+
+    class GeneratedTypeAccount(IGeneratedFromList):
+        def does_exists(self) -> bool:
+            return TypeAccount.objects.filter(
+                code=self.account_type["Code"]
+            ).exists()
+
+        def choose_random(self) -> Any:
+            __types = [{
+                "Type": "Savings account",
+                "Code": "SvnACC"
+                        },
+                       {
+                "Type": "Current account",
+                "Code": "CntACC"
+                        },
+                       {
+                "Type": "Salary account",
+                "Code": "SryACC"
+                        },
+                       {
+                "Type": "Checking account",
+                "Code": "CkgACC"
+                       }]
+            return random.choice(__types)
+
+        @staticmethod
+        def model_object(code) -> object:
+            return TypeAccount.objects.filter(
+                code=code
+            ).first()
+
+        def __init__(self) -> None:
+            self.account_type = self.choose_random()
+            self.instance = TypeAccount(
+                type=self.account_type["Type"],
+                code=self.account_type["Code"])
+            self.instance = self.insert()
+            self.instance = GeneratedAccount.GeneratedTypeAccount.model_object(
+                self.account_type["Code"]
+            )
+
+    def does_exists(self) -> bool:
+        return Account.objects.filter(
+            customer=self.customer,
+            type=self.type,
+            balance=self.balance
+        ).exists()
+
+    @staticmethod
+    def model_object(iban) -> object:
+        return Account.objects.filter(iban=iban).first()
+
+    def __init__(self, user) -> None:
+        self.iban = str(uuid4()).replace("-", "")[:12]
+        self.customer = GeneratedCustomer.model_object(user=user)
+        self.balance = random.random() * random.randint(500, 9000)
+        self.type = GeneratedAccount.GeneratedTypeAccount().instance
+        self.instance = Account(
+            customer=self.customer,
+            balance=self.balance,
+            type=self.type,
+            iban=self.iban
+        )
+
 def give_me_an_address() -> object:
     print(give_me_an_address)
     country = GeneratedCountry()
@@ -316,17 +393,19 @@ def give_me_an_address() -> object:
     state = GeneratedState(country.country_code)
     state.insert()
     city = GeneratedCity(country.country_code,
-                                 state.state_code)
+                         state.state_code)
     city.insert()
     address = GeneratedAddress(city.name, state.state_code)
     address.insert()
     return address
+
 
 def give_me_an_user() -> object:
     user = GeneratedUser()
     user.insert()
     user = GeneratedUser.model_object(user.username)
     return user
+
 
 class Command(BaseCommand):
 
@@ -350,8 +429,11 @@ class Command(BaseCommand):
 
                 for _ in range(2):
                     customer = GeneratedCustomer(branch,
-                                                give_me_an_address())
+                                                 give_me_an_address())
                     customer.insert()
+                    account = GeneratedAccount(customer.user)
+                    account.insert()
+                    print(account)
                     "Customer accounts"
                     "Customer cards"
                     "Customer movements"
