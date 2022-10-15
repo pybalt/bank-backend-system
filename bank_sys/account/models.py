@@ -1,7 +1,6 @@
 from django.db import models
 from customer.models import Customer
 # Create your models here.
-import uuid
 
 
 class TypeAccount(models.Model):
@@ -57,8 +56,7 @@ class Account(models.Model):
                              verbose_name="Account type")
 
     iban = models.CharField(max_length=10, editable=False,
-                            verbose_name="""IBAN.
-                            Let it blank to generate it automatically""")
+                            verbose_name="""IBAN.""")
 
     class Meta:
         managed = True
