@@ -3,10 +3,10 @@ from branch.models import Branch
 from address.models import Address
 from django.contrib.auth.models import User
 # Create your models here.
+
 class Employee(models.Model):
     
-    """Database model of customer
-    This model is not intended to be referred.
+    """Database model of employee
     
     fields:
     
@@ -22,11 +22,13 @@ class Employee(models.Model):
         
         employee_dni,
         
+        currently_working,
+
         branch,
         
         address ]
     """
-    
+
     
     
     id = models.AutoField(primary_key=True, unique=True, verbose_name = 'ID')
@@ -35,9 +37,12 @@ class Employee(models.Model):
     employee_surname = models.CharField(max_length= 50, verbose_name = 'Surname')
     employee_hire_date = models.DateField(verbose_name = 'Hire date')
     employee_dni = models.IntegerField(verbose_name = 'DNI', unique=True)
+    currently_working = models.BooleanField(default=True)
     branch = models.ForeignKey(Branch, on_delete= models.CASCADE, verbose_name = 'Branch')
-    address = models.OneToOneField(Address, on_delete= models.CASCADE, unique=True, to_field="id", verbose_name = 'Address')
-
+    address = models.OneToOneField(Address,
+                                   on_delete= models.CASCADE,
+                                   unique=True, to_field="id",
+                                   verbose_name = 'Address')
     class Meta:
         managed = True
         db_table = 'employee'
