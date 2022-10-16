@@ -9,11 +9,11 @@ import pycountry
 import geonamescache
 from address.models import (Country, State, City, Address)
 from account.models import Account, TypeAccount
+from card.models import CardProvider, TypeCard, Card
 from branch.models import Branch
 from customer.models import Customer, CustomerType
 from employee.models import Employee
 import random
-from django.db.utils import IntegrityError
 gc = geonamescache.GeonamesCache()
 countries = gc.get_countries()
 cities = gc.get_cities()
@@ -25,7 +25,7 @@ class IGenerated():
     def does_exists(self) -> bool:
         raise NotImplementedError
 
-    def insert(self) -> bool:
+    def insert(self) -> None:
         print(self.insert)
         if not self.does_exists():
             self.instance.save()
@@ -392,6 +392,59 @@ class GeneratedAccount(IGenerated):
             iban=self.iban
         )
 
+class GeneratedCard(IGenerated):
+    class GeneratedCardProvider(IGenerated):
+        def does_exists(self) -> bool:
+            return CardProvider.objects.filter(provider=self.provider).exists()
+        @staticmethod
+        def model_object(provider) -> object:
+            return CardProvider.objects.filter(provider=provider).first()
+        def __init__(self) -> None:
+            self.provider = fake.credit_card_provider()
+            self.instance = CardProvider(provider=self.provider)
+            self.insert()
+            __model_object = GeneratedCard.GeneratedCardProvider.model_object
+            self.instance = __model_object(self.provider)
+    class GeneratedTypeCard(IGeneratedFromList):
+        def choose_random(self) -> Any:
+            __types = ('CREDIT', 'DEBIT')
+            return random.choice(__types)
+        def does_exists(self) -> bool:
+            return TypeCard.objects.filter(type=self.type).exists()
+        @staticmethod
+        def model_object(type):
+            return TypeCard.objects.filter(type=type).first()
+        def __init__(self) -> None:
+            self.type = self.choose_random()
+            self.instance = TypeCard(type=self.type)
+            self.insert()
+            __model_object = GeneratedCard.GeneratedTypeCard.model_object
+            self.instance = __model_object(self.type)
+    def does_exists(self) -> bool:
+        return Card.objects.filter(account=self.account,
+                                   provider=self.provider,
+                                   number=self.number).exists()
+    @staticmethod
+    def model_object(account, provider, number):
+        Card.objects.filter(account=account,
+                            provider=provider,
+                            number=number).first()
+    def __init__(self, account) -> None:
+        self.account = account
+        self.number = fake.credit_card_number()
+        self.cvv = fake.credit_card_security_code()
+        self.expiry_date = fake.date()
+        self.type = self.GeneratedTypeCard().instance
+        self.provider = self.GeneratedCardProvider().instance
+        self.instance = Card(
+            account=self.account,
+            number=self.number,
+            cvv=self.cvv,
+            expiry_date=self.expiry_date,
+            type_card=self.type,
+            provider=self.provider
+        )
+
 
 def give_me_an_address() -> object:
     print(give_me_an_address)
@@ -435,13 +488,19 @@ class Command(BaseCommand):
                 employee.insert()
 
                 for _ in range(2):
+                    "Customer accounts"
                     customer = GeneratedCustomer(branch,
                                                  give_me_an_address())
                     customer.insert()
                     account = GeneratedAccount(customer.user)
                     account.insert()
+                    account = GeneratedAccount.model_object(account.iban)
                     print(account)
-                    "Customer accounts"
-                    "Customer cards"
-                    "Customer movements"
-                    "Loans"
+                    for _ in range(3):
+                        "Cards"
+                        card = GeneratedCard(account)
+                        card.insert()
+                    for _ in range(4):
+                        "Customer movements"
+                        
+                        "Loans"
