@@ -11,9 +11,9 @@ class Movement(models.Model):
     description = models.CharField(max_length=30)
     date = models.DateField(auto_now_add=True)
     recipient = models.ForeignKey(Account, on_delete=models.CASCADE,
-                               verbose_name="Recipient")
+                               verbose_name="Recipient", related_name='recipient')
     sender = models.ForeignKey(Account, on_delete=models.CASCADE,
-                               verbose_name="Sender")
+                               verbose_name="Sender", related_name='sender')
     
     def clean(self):
         if self.recipient == self.sender:
