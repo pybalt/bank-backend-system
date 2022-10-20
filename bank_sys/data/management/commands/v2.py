@@ -28,7 +28,7 @@ class IGenerated():
         raise NotImplementedError
 
     def insert(self) -> None:
-        print(self.insert)
+        
         if not self.does_exists():
             self.instance.save()
     @staticmethod
@@ -50,15 +50,15 @@ class ISubdivissions():
 class GeneratedCountry(ISubdivissions, IGeneratedFromList):
 
     def choose_random(self) -> str:
-        print(self.choose_random)
+        
         return random.choice(list(countries))
 
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return Country.objects.filter(code=self.country_code).exists()
 
     def has_subdivissions(self) -> bool:
-        print(self.has_subdivissions)
+        
         return bool(pycountry.subdivisions.get(country_code=self.country_code))
 
     @staticmethod
@@ -77,11 +77,11 @@ class GeneratedCountry(ISubdivissions, IGeneratedFromList):
 class GeneratedState(IGeneratedFromList, ISubdivissions):
 
     def has_subdivissions(self, country_code) -> bool:
-        print(self.has_subdivissions)
+        
         return bool(pycountry.subdivisions.get(country_code=country_code))
 
     def choose_random(self, country_code: str) -> str:
-        print(self.choose_random)
+        
         if self.has_subdivissions(country_code):
             subdivissions = pycountry.subdivisions.get(
                 country_code=country_code
@@ -89,7 +89,7 @@ class GeneratedState(IGeneratedFromList, ISubdivissions):
             return random.choice(list(subdivissions))
 
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return State.objects.filter(code=self.state_code).exists()
 
     @staticmethod
@@ -110,22 +110,12 @@ class GeneratedState(IGeneratedFromList, ISubdivissions):
 
 class GeneratedCity(IGeneratedFromList):
 
-    def choose_random(self, countrycode: str) -> str(int):
-        print(self.choose_random)
-
-        filtered_list = [
-            i for i in
-            filter(lambda x:
-                   cities[x]["countrycode"] == countrycode,
-                   cities)
-            ]
-        if filtered_list:
-            return random.choice(filtered_list)
-        else:
-            return countries[f"{countrycode}"]["name"]
+    def choose_random(self) -> str(int):
+        
+        return fake.city()
 
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return City.objects.filter(state_id=self.instance.state,
                                    city_name=self.instance.city_name).exists()
 
@@ -137,12 +127,9 @@ class GeneratedCity(IGeneratedFromList):
                                        )
                                    ).first()
 
-    def __init__(self, countrycode, state_code) -> None:
-        self.city_id = self.choose_random(countrycode)
-        try:
-            self.name = cities[self.city_id]["name"]
-        except KeyError:
-            self.name = self.city_id
+    def __init__(self, state_code) -> None:
+        self.city_id = self.choose_random()
+        self.name = self.city_id
         self.instance = City(city_name=self.name,
                              state=GeneratedState.model_object(
                                   state_code
@@ -160,7 +147,7 @@ class RandomStreet:
 class GeneratedAddress(IGenerated):
 
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return Address.objects.filter(address_name=self.address_name,
                                       address_number=self.address_number,
                                       address_city=self.address_city).exists()
@@ -186,20 +173,20 @@ class GeneratedAddress(IGenerated):
 class GeneratedBranch(IGenerated):
 
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return Branch.objects.filter(branch_number=self.branch_number,
                                      branch_name=self.branch_name,
                                      branch_address=self.address).exists()
 
     @staticmethod
     def model_object(number, name, address) -> object:
-        print(GeneratedBranch.model_object)
+        
         return Branch.objects.get(branch_number=number,
                                   branch_name=name,
                                   branch_address=address)
 
     def check_integrity(self) -> bool:
-        print(self.model_object)
+        
         number = Branch.objects.filter(
             branch_number=self.branch_number
             ).exists()
@@ -210,15 +197,15 @@ class GeneratedBranch(IGenerated):
         return False
 
     def __init__(self) -> None:
-        print(self.__init__)
+        
         self.__address = give_me_an_address()
-        self.branch_number = random.randint(1, 9999)
+        self.branch_number = random.randint(1, 20_000)
         self.branch_name = fake.color_name()
         self.address = GeneratedAddress.model_object(self.__address.address_name,
                                                      self.__address.address_number,
                                                      self.__address.address_city)
         if not self.check_integrity():
-            self.branch_number = random.randint(1, 20000)
+            self.branch_number = random.randint(1, 20_000)
             self.branch_name = fake.street_name()
         self.instance = Branch(branch_number=self.branch_number,
                                branch_name=self.branch_name,
@@ -227,12 +214,12 @@ class GeneratedBranch(IGenerated):
 
 class GeneratedUser(IGenerated):
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return User.objects.filter(username=self.username).exists()
 
     @staticmethod
     def model_object(username) -> object:
-        print(GeneratedUser.model_object)
+        
         return User.objects.get(username=username)
 
     def __init__(self) -> None:
@@ -277,7 +264,7 @@ class GeneratedCustomer(IGenerated):
         self.user = give_me_an_user()
         self.name = fake.first_name()
         self.surname = fake.last_name()
-        self.dni = random.random() * 10000000
+        self.dni = random.random() * 10_000_000
         self.type = GeneratedCustomer.GeneratedType().instance
         self.dob = fake.date()
         self.branch = branch
@@ -299,16 +286,16 @@ class GeneratedCustomer(IGenerated):
 
 class GeneratedEmployee(IGenerated):
     def does_exists(self) -> bool:
-        print(self.does_exists)
+        
         return Employee.objects.filter(employee_dni=self.dni).exists()
 
     @staticmethod
     def model_object(user) -> object:
-        print(GeneratedEmployee.model_object)
+        
         return Employee.objects.get(user=user)
 
     def __init__(self, branch) -> None:
-        print(GeneratedEmployee.__init__)
+        
         self.__address = give_me_an_address()
         self.user = give_me_an_user()
         self.name = fake.first_name()
@@ -503,13 +490,12 @@ class GeneratedLoan(IGenerated):
         )
 
 def give_me_an_address() -> object:
-    print(give_me_an_address)
+    
     country = GeneratedCountry()
     country.insert()
     state = GeneratedState(country.country_code)
     state.insert()
-    city = GeneratedCity(country.country_code,
-                         state.state_code)
+    city = GeneratedCity(state.state_code)
     city.insert()
     address = GeneratedAddress(city.name, state.state_code)
     address.insert()
@@ -522,22 +508,22 @@ def give_me_an_user() -> object:
     return user
 
 def movement_accounts() -> list:
-    print(movement_accounts)
+    
     __range = Account.objects.count()
     __pks_choices = range(1, __range)
-    print(__pks_choices,": ", __range)
+
     accounts = random.choices(__pks_choices, k=2)
     accounts = list(map(
         lambda pk: Account.objects.filter(pk=pk).first(),
         accounts
         ))
-    print([i for i in accounts])
+
     if accounts[0].id == accounts[1].id:
         return movement_accounts()
     return accounts
 
 def bulk_create(cls:object, arr):
-    cls.objects.bulk_create(arr, ignore_conflicts=True)
+    cls.objects.bulk_create(arr)
 
 
 class Command(BaseCommand):
@@ -567,7 +553,7 @@ class Command(BaseCommand):
             x.branch_name,
             x.branch_address_id), bulk_branchs))
             
-        print(bulk_branchs)
+        
 
         "employees"
         for _ in range(number_of_fields):

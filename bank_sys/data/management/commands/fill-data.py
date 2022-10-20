@@ -111,19 +111,8 @@ class GeneratedState(IGeneratedFromList, ISubdivissions):
 
 class GeneratedCity(IGeneratedFromList):
 
-    def choose_random(self, countrycode: str) -> str(int):
-        print(self.choose_random)
-
-        filtered_list = [
-            i for i in
-            filter(lambda x:
-                   cities[x]["countrycode"] == countrycode,
-                   cities)
-            ]
-        if filtered_list:
-            return random.choice(filtered_list)
-        else:
-            return countries[f"{countrycode}"]["name"]
+    def choose_random(self) -> str(int):
+        return fake.city()
 
     def does_exists(self) -> bool:
         print(self.does_exists)
@@ -138,12 +127,9 @@ class GeneratedCity(IGeneratedFromList):
                                        )
                                    ).first()
 
-    def __init__(self, countrycode, state_code) -> None:
-        self.city_id = self.choose_random(countrycode)
-        try:
-            self.name = cities[self.city_id]["name"]
-        except KeyError:
-            self.name = self.city_id
+    def __init__(self, state_code) -> None:
+        self.city_id = self.choose_random()
+        self.name = self.city_id
         self.instance = City(city_name=self.name,
                              state=GeneratedState.model_object(
                                   state_code
@@ -213,7 +199,7 @@ class GeneratedBranch(IGenerated):
     def __init__(self) -> None:
         print(self.__init__)
         self.__address = give_me_an_address()
-        self.branch_number = random.randint(1, 9999)
+        self.branch_number = random.randint(1, 20000)
         self.branch_name = fake.color_name()
         self.address = GeneratedAddress.model_object(self.__address.address_name,
                                                      self.__address.address_number,
@@ -509,8 +495,7 @@ def give_me_an_address() -> object:
     country.insert()
     state = GeneratedState(country.country_code)
     state.insert()
-    city = GeneratedCity(country.country_code,
-                         state.state_code)
+    city = GeneratedCity(state.state_code)
     city.insert()
     address = GeneratedAddress(city.name, state.state_code)
     address.insert()
