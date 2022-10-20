@@ -16,7 +16,9 @@ class Loan(models.Model):
     id = models.AutoField(primary_key=True, verbose_name="ID")
     granter = models.ForeignKey(Employee, on_delete=models.PROTECT)
     amount = models.IntegerField()
-    type = models.CharField(choices=LoanTypes.choices, default=LoanTypes.PERSONAL)
+    type = models.CharField(choices=LoanTypes.choices,
+                            default=LoanTypes.PERSONAL,
+                            max_length=6)
     date = models.DateField(auto_now_add=True)
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
 

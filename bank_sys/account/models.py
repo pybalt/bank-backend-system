@@ -4,7 +4,7 @@ from customer.models import Customer
 
 
 class TypeAccount(models.Model):
-    """Database model of customers
+    """Database model of TypeAccount
 
     fields:
 
@@ -26,7 +26,7 @@ class TypeAccount(models.Model):
 
 
 class Account(models.Model):
-    """Database model of customers
+    """Database model of Account
 
     fields:
 
@@ -60,7 +60,7 @@ class Account(models.Model):
 
     class Meta:
         managed = True
-        db_table = 'cuenta'
+        db_table = 'account'
 
     def __str__(self):
         return str(f"{self.id}, {self.customer}, {self.type}")

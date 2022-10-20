@@ -2,6 +2,7 @@ from django.db import models
 from branch.models import Branch
 from address.models import Address
 from django.contrib.auth.models import User
+from account.models import Account
 # Create your models here.
 
 class Employee(models.Model):

@@ -1,7 +1,6 @@
 # This is a custom command. You use it through manage.py this way:
 "py manage.py fill-data"
 import heartrate
-from typing import Any
 from uuid import uuid4
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -39,7 +38,7 @@ class IGenerated():
 
 class IGeneratedFromList(IGenerated):
 
-    def choose_random(self) -> Any:
+    def choose_random(self):
         raise NotImplementedError
 
 
@@ -255,7 +254,7 @@ class GeneratedCustomer(IGenerated):
         def model_object(customer_type) -> object:
             return CustomerType.objects.get(customer_type=customer_type)
 
-        def choose_random(self) -> Any:
+        def choose_random(self):
             __types = ['BLACK', 'GOLD', 'CLASSIC']
             return random.choice(__types)
 
@@ -339,7 +338,7 @@ class GeneratedAccount(IGenerated):
                 code=self.account_type["Code"]
             ).exists()
 
-        def choose_random(self) -> Any:
+        def choose_random(self):
             __types = [{
                 "Type": "Savings account",
                 "Code": "SvnACC"
@@ -412,7 +411,7 @@ class GeneratedCard(IGenerated):
             __model_object = GeneratedCard.GeneratedCardProvider.model_object
             self.instance = __model_object(self.provider)
     class GeneratedTypeCard(IGeneratedFromList):
-        def choose_random(self) -> Any:
+        def choose_random(self):
             __types = ('CREDIT', 'DEBIT')
             return random.choice(__types)
         def does_exists(self) -> bool:
@@ -525,8 +524,8 @@ def give_me_an_user() -> object:
 def movement_accounts() -> list:
     print(movement_accounts)
     __range = Account.objects.count()
-    __pks_choices = [i+1 for i in range(0, __range)]
-    print(__pks_choices)
+    __pks_choices = range(1, __range)
+    print(__pks_choices,": ", __range)
     accounts = random.choices(__pks_choices, k=2)
     accounts = list(map(
         lambda pk: Account.objects.filter(pk=pk).first(),
@@ -537,6 +536,9 @@ def movement_accounts() -> list:
         return movement_accounts()
     return accounts
 
+def bulk_create(cls:object, arr):
+    cls.objects.bulk_create(arr, ignore_conflicts=True)
+
 
 class Command(BaseCommand):
 
@@ -546,39 +548,73 @@ class Command(BaseCommand):
         heartrate.trace(browser=True)
         number_of_fields = int(
             input("How many fields do you want to generate?  \n  --> "))
+        bulk_branchs = []
+        bulk_employees = []
+        bulk_accounts = []
+        bulk_customers = []
+        bulk_cards = []
+        bulk_movements = []
+        bulk_loans = []
         for _ in range(number_of_fields):
             "Branch"
             branch = GeneratedBranch()
-            branch.insert() # ! Use bulk_... 
-            branch = GeneratedBranch.model_object(branch.branch_number,
-                                                  branch.branch_name,
-                                                  branch.address)
-            "employees"
-            for _ in range(2):
-                employee = GeneratedEmployee(branch)
-                employee.insert() # ! Use bulk_... 
-                for _ in range(2):
-                    "Customer accounts"
-                    customer = GeneratedCustomer(branch)
-                    customer.insert() # ! Use bulk_... 
-                    account = GeneratedAccount(customer.user)
-                    account.insert() # ! Use bulk_... 
-                    account = GeneratedAccount.model_object(account.iban)
-                    print(account)
-                    for _ in range(3):
-                        "Cards"
-                        card = GeneratedCard(account)
-                        card.insert() # ! Use bulk_... 
-                for _ in range(2):
-                    "Loans"
-                    employee = GeneratedEmployee.model_object(employee.user)
-                    loan = GeneratedLoan(account, employee)
-                    loan.insert()
-                for _ in range(4):
-                    "Customer movements"
-                    accounts = movement_accounts()
-                    movement = GeneratedMovement(accounts[0], accounts[1])
-                    movement.insert() # ! Use bulk_... 
+            bulk_branchs.append(branch.instance)
+        
+        bulk_create(Branch, bulk_branchs)
+        
+        bulk_branchs = list(map(lambda x: GeneratedBranch.model_object(
+            x.branch_number,
+            x.branch_name,
+            x.branch_address_id), bulk_branchs))
+            
+        print(bulk_branchs)
 
-                    # It would be nice if each time we save a loan, a new movement is created with it.
-                    # Account.objects.bulk_create
+        "employees"
+        for _ in range(number_of_fields):
+            employee = GeneratedEmployee(random.choice(bulk_branchs))
+            bulk_employees.append(employee.instance)
+
+        bulk_create(Employee, bulk_employees)
+        bulk_employees = list(map(lambda x: GeneratedEmployee.model_object(x.user), bulk_employees))
+
+        "Customers"
+        for _ in range(number_of_fields):
+            customer = GeneratedCustomer(random.choice(bulk_branchs))
+            bulk_customers.append(customer.instance)
+
+        bulk_create(Customer, bulk_customers)
+        bulk_customers = list(map(lambda x: GeneratedCustomer.model_object(x.user), bulk_customers))
+
+        "Accounts"
+        for i in bulk_customers:
+            account = GeneratedAccount(i.user)
+            bulk_accounts.append(account.instance)
+
+        bulk_create(Account, bulk_accounts)
+        bulk_accounts = list(map(lambda x: GeneratedAccount.model_object(x.iban), bulk_accounts))
+
+        "Cards"
+        for i in bulk_accounts:
+            card = GeneratedCard(i)
+            bulk_cards.append(card.instance)
+        bulk_create(Card, bulk_cards)
+        bulk_cards = list(map(lambda x: GeneratedCard.model_object(x.account,
+                                                                   x.provider,
+                                                                   x.number), bulk_cards))
+        "Loans"
+        for _ in range(number_of_fields):
+            employee = random.choice(bulk_employees)
+            account = random.choice(bulk_accounts)
+            loan = GeneratedLoan(account, employee)
+            bulk_loans.append(loan.instance)
+        bulk_create(Loan, bulk_loans)
+
+        for _ in range(number_of_fields):
+            "Customer movements"
+            accounts = movement_accounts()
+            movement = GeneratedMovement(accounts[0], accounts[1])
+            bulk_movements.append(movement.instance)
+        bulk_create(Movement, bulk_movements)
+
+            # It would be nice if each time we save a loan, a new movement is created with it.
+            # Account.objects.bulk_create
